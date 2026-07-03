@@ -197,6 +197,20 @@ body {
   padding: 16px 12px;
   overflow-y: auto;
   color: var(--text-on-dark);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
+}
+
+.sidebar--collapsed {
+  width: 0;
+  margin-left: -220px;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-right: none;
 }
 
 .sidebar__title {

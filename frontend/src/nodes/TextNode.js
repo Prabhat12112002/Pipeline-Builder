@@ -36,6 +36,7 @@
  */
 import React, { useCallback, useEffect, useRef, useMemo } from "react";
 import { Handle, Position } from "reactflow";
+import BaseNode from "./BaseNode";
 
 const MAX_WIDTH = 400;
 const MIN_WIDTH = 220;
@@ -68,15 +69,6 @@ export default function TextNode({ id, data }) {
   const text = data?.text ?? "";
 
   const variables = useMemo(() => extractVariables(text), [text]);
-
-  const onChange = useCallback(
-    (key, value) => {
-      if (typeof data?.onChange === "function") {
-        data.onChange(id, key, value);
-      }
-    },
-    [data, id]
-  );
 
   // Auto-resize: measure scroll dimensions and clamp so the ENTIRE
   // node card stays within 400×300. We compute the "chrome" height
@@ -120,73 +112,48 @@ export default function TextNode({ id, data }) {
     resize();
   }, [resize]);
 
-  const handleChange = (e) => {
-    onChange("text", e.target.value);
-  };
+  const config = useMemo(() => ({
+    type: "text",
+    title: "Text",
+    icon: "T",
+    color: "var(--node-text)",
+    badge: "Template",
+    maxWidth: MAX_WIDTH,
+    width: "auto",
+    targetId: "__default__",
+    targetStyle: { top: variables.length > 0 ? "24px" : "50%" },
+    source: true,
+    target: true,
+    fields: [
+      {
+        kind: "custom",
+        key: "text",
+        render: ({ value, onChange }) => (
+          <textarea
+            ref={textareaRef}
+            className="node-card__textarea"
+            value={value ?? ""}
+            placeholder="Type here… use {{ name }} to inject variables"
+            onChange={(e) => onChange(e.target.value)}
+            rows={2}
+            style={{
+              width: "100%",
+              height: "auto",
+              maxWidth: MAX_WIDTH - 24,
+              overflow: "hidden",
+              overflowWrap: "anywhere",
+            }}
+          />
+        ),
+      },
+    ],
+    hint: variables.length > 0
+      ? `Variables: ${variables.join(", ")}`
+      : "Tip: write {{ name }} to add an input handle.",
+  }), [variables]);
 
   return (
-    <div
-      className="node-card"
-      style={{
-        width: "auto",
-        minWidth: MIN_WIDTH,
-        maxWidth: MAX_WIDTH,
-        position: "relative",
-      }}
-    >
-      {/* Source handle on the right */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{ borderColor: "var(--node-text)" }}
-      />
-
-      {/* Header strip (re-use BaseNode's styling via a matching markup) */}
-      <div className="node-card__header">
-        <span
-          className="node-card__icon"
-          style={{ background: "var(--node-text)" }}
-        >
-          T
-        </span>
-        <span className="node-card__title">Text</span>
-        <span className="node-card__badge">Template</span>
-      </div>
-
-      <div className="node-card__body" style={{ alignItems: "stretch" }}>
-        <textarea
-          ref={textareaRef}
-          className="node-card__textarea"
-          value={text}
-          placeholder="Type here… use {{ name }} to inject variables"
-          onChange={handleChange}
-          rows={2}
-          style={{
-            width: "100%",
-            height: "auto",
-            maxWidth: MAX_WIDTH - 24,
-            overflow: "hidden",
-            overflowWrap: "anywhere",
-          }}
-        />
-        <div className="node-card__hint">
-          {variables.length > 0
-            ? `Variables: ${variables.join(", ")}`
-            : "Tip: write {{ name }} to add an input handle."}
-        </div>
-      </div>
-
-      {/* Default target handle on the left (kept for top-level input) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="__default__"
-        style={{
-          borderColor: "var(--node-text)",
-          top: "50%",
-        }}
-      />
-
+    <BaseNode id={id} data={data} config={config}>
       {/* Dynamic variable handles — one per {{ var }} on the left,
           stacked below the default handle. */}
       {variables.map((name, i) => {
@@ -209,6 +176,6 @@ export default function TextNode({ id, data }) {
           </React.Fragment>
         );
       })}
-    </div>
+    </BaseNode>
   );
 }

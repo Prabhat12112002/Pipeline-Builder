@@ -127,7 +127,7 @@ const FIELD_COMPONENTS = {
 
 /* ---------------- BaseNode component ---------------- */
 
-function BaseNode({ id, data, config }) {
+function BaseNode({ id, data, config, children }) {
   const onChange = useCallback(
     (key, value) => {
       if (typeof data?.onChange === "function") {
@@ -140,14 +140,17 @@ function BaseNode({ id, data, config }) {
   const showSource = config.source !== false;
   const showTarget = config.target !== false;
   const minWidth = config.minWidth ?? 220;
+  const maxWidth = config.maxWidth;
+  const width = config.width;
 
   return (
-    <div className="node-card" style={{ minWidth }}>
+    <div className="node-card" style={{ minWidth, maxWidth, width }}>
       {showSource && (
         <Handle
           type="source"
           position={Position.Right}
-          style={{ borderColor: config.color }}
+          {...(config.sourceId ? { id: config.sourceId } : {})}
+          style={{ borderColor: config.color, ...config.sourceStyle }}
         />
       )}
 
@@ -198,9 +201,12 @@ function BaseNode({ id, data, config }) {
         <Handle
           type="target"
           position={Position.Left}
-          style={{ borderColor: config.color }}
+          {...(config.targetId ? { id: config.targetId } : {})}
+          style={{ borderColor: config.color, ...config.targetStyle }}
         />
       )}
+
+      {children}
     </div>
   );
 }

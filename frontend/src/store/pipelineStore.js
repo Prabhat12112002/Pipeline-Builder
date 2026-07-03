@@ -66,12 +66,36 @@ export const usePipelineStore = create((set, get) => ({
       data: {
         ...defaultNodeData(type),
         onChange: (nodeId, key, value) => {
+          let extraState = {};
+          if (type === "text" && key === "text") {
+            const VAR_REGEX = /\{\{\s*([A-Za-z_$][\w$]*)\s*\}\}/g;
+            const seen = new Set();
+            let m;
+            VAR_REGEX.lastIndex = 0;
+            while ((m = VAR_REGEX.exec(value || "")) !== null) {
+              seen.add(m[1]);
+            }
+            const currentEdges = get().edges;
+            const newEdges = currentEdges.filter(
+              (e) =>
+                !(
+                  e.target === nodeId &&
+                  e.targetHandle &&
+                  e.targetHandle.startsWith("var__") &&
+                  !seen.has(e.targetHandle.replace("var__", ""))
+                )
+            );
+            if (newEdges.length !== currentEdges.length) {
+              extraState = { edges: newEdges };
+            }
+          }
           set({
             nodes: get().nodes.map((n) =>
               n.id === nodeId
                 ? { ...n, data: { ...n.data, [key]: value } }
                 : n
             ),
+            ...extraState,
           });
         },
       },

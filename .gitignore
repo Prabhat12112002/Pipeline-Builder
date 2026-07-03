@@ -1,2 +1,24 @@
-skills/
+# Dependencies
 node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Local env files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+frontend/.env
+
+# Build outputs
+frontend/build/
+
+# Unnecessary directories
+download/
+scripts/
+tool-results/
+worklog.md
+skills/

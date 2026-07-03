@@ -35,6 +35,7 @@ function Builder() {
     addNode,
   } = usePipelineStore();
   const [submitting, setSubmitting] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -71,7 +72,54 @@ function Builder() {
     <div className="app-shell">
       {/* Toolbar */}
       <header className="toolbar">
-        <div className="toolbar__brand">
+        <div className="toolbar__brand" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+            style={{
+              background: "none",
+              border: "none",
+              color: isSidebarOpen ? "var(--text-on-dark)" : "var(--text-muted)",
+              cursor: "pointer",
+              padding: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "6px",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+              e.currentTarget.style.color = "var(--text-on-dark)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "none";
+              e.currentTarget.style.color = isSidebarOpen ? "var(--text-on-dark)" : "var(--text-muted)";
+            }}
+          >
+            {/* Hide Sidebar Horiz Vector SVG Icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="9" y1="3" x2="9" y2="21" />
+              {isSidebarOpen ? (
+                // Arrow pointing left inside the sidebar layout
+                <path d="M16 15l-3-3 3-3" />
+              ) : (
+                // Arrow pointing right inside the sidebar layout
+                <path d="M14 9l3 3-3 3" />
+              )}
+            </svg>
+          </button>
           <span className="toolbar__brand-mark">⌁</span>
           Pipeline Builder
           <span className="toolbar__subtitle">visual node editor</span>
@@ -100,7 +148,7 @@ function Builder() {
 
       {/* Body: sidebar + canvas */}
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <Sidebar />
+        <Sidebar isOpen={isSidebarOpen} />
         <div className="canvas-wrap" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
@@ -112,6 +160,7 @@ function Builder() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             fitView
+            fitViewOptions={{ padding: 0.2 }}
             deleteKeyCode={["Backspace", "Delete"]}
             style={flowStyle}
           >
