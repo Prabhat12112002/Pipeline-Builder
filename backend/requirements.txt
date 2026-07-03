@@ -1,0 +1,8 @@
+# Pipeline Builder — Backend dependencies
+# Pinned to exact versions for reproducible builds.
+# Run `pip-audit` before publication to check for known vulnerabilities.
+
+fastapi==0.128.0
+uvicorn[standard]==0.44.0
+pydantic==2.12.5
+starlette==0.50.0

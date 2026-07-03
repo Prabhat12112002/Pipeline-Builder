@@ -1,34 +1,49 @@
 /**
  * TextNode (Part 3)
  * --------------------------------------------------------------
- * Two custom behaviours on top of the shared BaseNode skeleton:
+ * Two custom behaviours on top of the shared node-card skeleton:
  *
  *  1. AUTO-RESIZE
- *     The textarea's width/height grow to fit content, capped at
- *     400px wide × 300px tall. We measure the textarea's scrollHeight
- *     and scrollWidth on every input and adjust the node size.
+ *     The textarea's width/height grow to fit content, capped so the
+ *     ENTIRE node card stays within 400px wide × 300px tall. We
+ *     measure the card's "chrome" (header + padding + hint) live and
+ *     subtract it from MAX_HEIGHT to get the textarea's height budget.
  *
  *  2. DYNAMIC VARIABLE HANDLES
- *     Scanning the text for `{{ variableName }}` patterns (valid JS
- *     identifier, internal spaces allowed) and rendering one left-side
- *     target Handle per unique variable. Handles are removed when the
- *     variable is deleted from the text. The default top-left target
- *     handle (if any) is preserved.
+ *     Scanning the text for `{{ variableName }}` patterns and rendering
+ *     one left-side target Handle per unique variable. Handles are
+ *     removed when the variable is deleted from the text. The default
+ *     target handle is always preserved.
  *
- * Variables are extracted with a regex and de-duplicated, preserving
- * insertion order so handle positions stay stable while typing.
+ * VARIABLE REGEX CHOICE & XSS SAFETY
+ *   The regex `/\{\{\s*([A-Za-z_$][\w$]*)\s*\}\}/g` only captures
+ *   valid JavaScript identifiers (letter/underscore/$ followed by
+ *   word chars or $). This deliberately rejects:
+ *     - `{{ 123 }}`      (starts with a digit)
+ *     - `{{ 1abc }}`     (starts with a digit)
+ *     - `{{ a-b }}`      (hyphen is not a valid identifier char)
+ *     - `{{ <script> }}` (angle brackets aren't identifier chars)
+ *   Because captured names are restricted to `[A-Za-z0-9_$]`, they
+ *   cannot contain HTML and are safe to render as handle IDs and
+ *   text labels. React's JSX `{name}` auto-escapes regardless, so
+ *   there is no XSS vector even if a name somehow contained markup.
+ *
+ *   Internal spaces inside the braces are tolerated and trimmed:
+ *     `{{ name }}`, `{{name}}`, `{{  name  }}` all extract "name".
+ *
+ * Variables are de-duplicated, preserving insertion order so handle
+ * positions stay stable while typing.
  */
 import React, { useCallback, useEffect, useRef, useMemo } from "react";
 import { Handle, Position } from "reactflow";
-import { BaseNode } from "./BaseNode";
 
 const MAX_WIDTH = 400;
 const MIN_WIDTH = 220;
 const MAX_HEIGHT = 300;
 
-// Match {{ name }} where `name` is a JS identifier (letters, digits,
-// underscore, $) with optional internal whitespace. Leading/trailing
-// whitespace inside the braces is trimmed before dedup.
+// Match {{ name }} where `name` is a valid JS identifier. Internal
+// whitespace inside the braces is allowed and trimmed. See header
+// comment for the security rationale behind this character class.
 const VAR_REGEX = /\{\{\s*([A-Za-z_$][\w$]*)\s*\}\}/g;
 
 function extractVariables(text) {
@@ -36,7 +51,7 @@ function extractVariables(text) {
   const seen = new Set();
   const ordered = [];
   let m;
-  // Reset lastIndex because the regex has the global flag
+  // Reset lastIndex because the regex has the global flag.
   VAR_REGEX.lastIndex = 0;
   while ((m = VAR_REGEX.exec(text)) !== null) {
     const name = m[1];

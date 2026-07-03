@@ -6,14 +6,24 @@
  * friendly alert with num_nodes / num_edges / is_dag. Network and
  * server errors are surfaced as alerts too.
  *
- * The payload sent to the backend is:
- *   { nodes: [{ id, type, ... }], edges: [{ source, target, ... }] }
- * The backend only reads `nodes.length`, `edges.length`, and each
- * edge's `source`/`target` for the DAG check, so the full reactflow
- * objects are safe to send.
+ * The backend API base URL is configurable via the
+ * `REACT_APP_API_URL` environment variable (see `.env.example`).
+ * It defaults to http://localhost:8000 for local development.
+ *
+ * XSS safety: the alert message is built from server-returned
+ * numbers/booleans only — no user-supplied string is interpolated
+ * into the DOM. The `alert()` call is a native browser dialog and
+ * cannot execute HTML/script.
  */
 
-const ENDPOINT = "http://localhost:8000/pipelines/parse";
+/**
+ * Base URL of the backend API. Configurable via env var so the same
+ * build can target staging/prod without code changes.
+ */
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:8000";
+
+const ENDPOINT = `${API_BASE_URL}/pipelines/parse`;
 
 /**
  * Submit the current pipeline to the backend for analysis.
@@ -48,10 +58,12 @@ export async function submitPipeline(nodes, edges) {
       body: JSON.stringify(payload),
     });
   } catch (err) {
-    // Network error — backend not running, wrong URL, CORS preflight failed.
+    // Network error — backend not running, wrong URL, or CORS
+    // preflight failed. Surface a clear, actionable message.
     throw new Error(
-      `Could not reach the backend at ${ENDPOINT}.\n` +
-        `Is the FastAPI server running? (cd backend && uvicorn main:app --reload)\n` +
+      `Could not reach the backend at ${API_BASE_URL}.\n` +
+        `Is the FastAPI server running? ` +
+        `(cd backend && uvicorn main:app --reload)\n` +
         `Detail: ${err.message}`
     );
   }
@@ -60,7 +72,14 @@ export async function submitPipeline(nodes, edges) {
     let detail = "";
     try {
       const errBody = await response.json();
-      detail = errBody.detail || JSON.stringify(errBody);
+      // Pydantic 422 returns { detail: [...] }; flatten for display.
+      if (Array.isArray(errBody.detail)) {
+        detail = errBody.detail
+          .map((d) => d.msg || JSON.stringify(d))
+          .join("; ");
+      } else {
+        detail = errBody.detail || JSON.stringify(errBody);
+      }
     } catch (_) {
       detail = await response.text().catch(() => "");
     }
@@ -75,6 +94,8 @@ export async function submitPipeline(nodes, edges) {
 
 /**
  * Build the friendly alert message from the backend response.
+ * Only numbers and a boolean are interpolated — no user input —
+ * so there is no XSS surface even if alert() were replaced.
  */
 export function formatResult(result) {
   const dag = result.is_dag ? "true ✓" : "false ✗";
@@ -97,7 +118,7 @@ export async function submitAndAlert(nodes, edges) {
     alert(formatResult(result));
     return result;
   } catch (err) {
-    alert(`Failed to analyse pipeline:\n${err.message}`);
+    alert(`Failed to parse pipeline:\n${err.message}`);
     throw err;
   }
 }

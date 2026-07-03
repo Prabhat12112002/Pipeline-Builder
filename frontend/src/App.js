@@ -47,9 +47,9 @@ function Builder() {
       const type = event.dataTransfer.getData("application/reactflow");
       if (!type) return;
 
-      const position = event.currentTarget.getBoundingClientRect();
-      // reactflow screen-to-flow conversion happens via the wrapper ref
-      // using the reactflow instance from the bound event.
+      // Defensive: ensure the wrapper ref is attached before computing
+      // drop coordinates (guards against race conditions on mount).
+      if (!reactFlowWrapper.current) return;
       const bounds = reactFlowWrapper.current.getBoundingClientRect();
       const x = event.clientX - bounds.left;
       const y = event.clientY - bounds.top;
