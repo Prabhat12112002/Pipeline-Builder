@@ -1,6 +1,9 @@
 # ⌁ Visual Pipeline Builder
 
 A sleek, premium, and professional node-based workflow editor built on **React + React Flow** (Frontend) and **Python + FastAPI** (Backend). Drag-and-drop components, connect data streams, and analyze structures with automated cycle detection (DAG validation).
+<img width="1079" height="620" alt="image" src="https://github.com/user-attachments/assets/2e24d825-93fe-4ff1-b3ec-f041b89384e0" />
+<img width="1070" height="614" alt="image" src="https://github.com/user-attachments/assets/11d7f377-7780-4124-8ee8-3fee6678738a" />
+
 
 ---
 
